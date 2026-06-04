@@ -163,15 +163,48 @@ In order, top to bottom — each should take a minute:
 
 ## 6. Recovery if something breaks
 
-| Symptom | Most likely cause | Fix |
-|---|---|---|
-| `openai.RateLimitError: insufficient_quota` | OpenAI key out of budget | Top up the account, or rotate `.env`'s `OPENAI_API_KEY` to a personal key and redeploy. If using the gateway, rotate the Provider Secret instead. |
-| CI workflow skipped on a fresh PR | PR is a draft | `gh pr ready <N>` |
-| CI workflow ran but used `--evaluator assertions` only on the PII job (no `pii_leak_rate` column) | Workflow definition on `main` is stale | Make sure latest `main` is pushed; CI reads the workflow from the PR's base ref. |
-| Engine surfaces no hallucinations after 20 min | Either no hallucinations to detect (the hub `AGENTS.md` already carries the strict prompt), or Engine priorities don't include them | Verify the pre-fix prompt is live: ask the agent in chat "What's Meridian National's HELOC interest rate today?" or "How many basis points is the relationship interest bonus?" — it should commit to a specific number (the KB does not contain either, so any number is fabricated). If it answers with "I couldn't find that" or refuses, the strict prompt is live in Context Hub — re-seed the buggy `AGENTS.md` with `uv run python -m scripts.setup_context_hub` (or revert the commit in the Context Hub UI) and restart the deployment. Then check Engine → Settings → Priorities. |
-| Agent ignores a just-saved `AGENTS.md` edit | Prompt is pulled once at process start | Restart/redeploy the agent so `get_prompt()` re-pulls. If the hub is unreachable the agent silently falls back to `prompts.py` — check `LANGSMITH_API_KEY` / `LANGSMITH_WORKSPACE_ID`. |
-| Frontend `/concierge/` shows the API-key prompt | Expected on a deployed instance. Paste your LangSmith API key, or open the URL once with `?api_key=lsv2_pt_…`. |
-| Frontend 403 on `/threads` | API key in localStorage is invalid | Devtools → Application → Local Storage → remove `concierge:apiKey` → reload → re-enter key. |
+**`openai.RateLimitError: insufficient_quota`**
+*Cause:* OpenAI key out of budget.
+*Fix:* Top up the account, or rotate `.env`'s `OPENAI_API_KEY` to a personal
+key and redeploy. If using the gateway, rotate the Provider Secret instead.
+
+**CI workflow skipped on a fresh PR**
+*Cause:* PR is a draft.
+*Fix:* `gh pr ready <N>`.
+
+**CI workflow ran but used `--evaluator assertions` only on the PII job (no
+`pii_leak_rate` column)**
+*Cause:* Workflow definition on `main` is stale.
+*Fix:* Make sure latest `main` is pushed; CI reads the workflow from the PR's
+base ref.
+
+**Engine surfaces no hallucinations after 20 min**
+*Cause:* Either no hallucinations to detect (the hub `AGENTS.md` already carries
+the strict prompt), or Engine priorities don't include them.
+*Fix:* Verify the pre-fix prompt is live: ask the agent in chat "What's Meridian
+National's HELOC interest rate today?" or "How many basis points is the
+relationship interest bonus?" — it should commit to a specific number (the KB
+does not contain either, so any number is fabricated). If it answers with "I
+couldn't find that" or refuses, the strict prompt is live in Context Hub —
+re-seed the buggy `AGENTS.md` with `uv run python -m scripts.setup_context_hub`
+(or revert the commit in the Context Hub UI) and restart the deployment. Then
+check Engine → Settings → Priorities.
+
+**Agent ignores a just-saved `AGENTS.md` edit**
+*Cause:* Prompt is pulled once at process start.
+*Fix:* Restart/redeploy the agent so `get_prompt()` re-pulls. If the hub is
+unreachable the agent silently falls back to `prompts.py` — check
+`LANGSMITH_API_KEY` / `LANGSMITH_WORKSPACE_ID`.
+
+**Frontend `/concierge/` shows the API-key prompt**
+*Cause:* Expected on a deployed instance.
+*Fix:* Paste your LangSmith API key, or open the URL once with
+`?api_key=lsv2_pt_…`.
+
+**Frontend 403 on `/threads`**
+*Cause:* API key in localStorage is invalid.
+*Fix:* Devtools → Application → Local Storage → remove `concierge:apiKey` →
+reload → re-enter key.
 
 ## 7. Quick reference
 
