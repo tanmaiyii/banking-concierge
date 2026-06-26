@@ -410,6 +410,63 @@ EXCESSIVE_RETRIEVAL: tuple[Prompt, ...] = tuple(
 )
 
 
+# Long, many-turn conversations. The full transcript is resent on every turn,
+# so token cost grows roughly quadratically with conversation length — the
+# context-growth driver in the High-Cost Patterns report.
+LONG_MULTI_TURN: tuple[Prompt, ...] = (
+    Prompt(
+        "high_cost_long_multiturn",
+        (
+            "I'm helping customer CUST-0001 — can you pull them up?",
+            "What's the balance on their checking account?",
+            "And their savings balance?",
+            "Show me their last 5 transactions.",
+            "Were any of those over $500?",
+            "Okay, move $200 from checking 1234 to savings 5678.",
+            "Now find the nearest branch to 94111 so they can drop off a check.",
+            "Does that branch take notary appointments?",
+        ),
+    ),
+    Prompt(
+        "high_cost_long_multiturn",
+        (
+            "Look up CUST-0002 for me.",
+            "What account types do they have?",
+            "What's the APY on their savings?",
+            "How do they avoid the monthly fee on it?",
+            "Pull their last 3 transactions.",
+            "What's the daily Zelle limit on their checking?",
+            "Set up a $50 transfer from 9911 to 9912.",
+            "And remind me how long an external transfer takes?",
+        ),
+    ),
+)
+
+
+# Repeated lookups of the same record across turns — redundant tool calls that
+# re-fetch data already in context. The avoidable-tool-call driver in the
+# High-Cost Patterns report.
+REDUNDANT_LOOKUP: tuple[Prompt, ...] = (
+    Prompt(
+        "high_cost_redundant_lookup",
+        (
+            "Look up customer CUST-0003.",
+            "Can you look up CUST-0003 again? I want to be sure.",
+            "One more time — pull CUST-0003 and read me the balance.",
+            "And re-check CUST-0003's account types.",
+        ),
+    ),
+    Prompt(
+        "high_cost_redundant_lookup",
+        (
+            "Pull CUST-0004's recent transactions.",
+            "Re-run that, I think it just changed.",
+            "Look up CUST-0004's transactions one more time to confirm.",
+        ),
+    ),
+)
+
+
 ALL_PROMPTS: list[Prompt] = [
     *HEALTHY_FAQS,
     *VALID_ACCOUNT_LOOKUP_PROMPTS,
@@ -420,6 +477,8 @@ ALL_PROMPTS: list[Prompt] = [
     *BROKEN_TOOL_PROMPTS,
     *OUT_OF_SCOPE,
     *EXCESSIVE_RETRIEVAL,
+    *LONG_MULTI_TURN,
+    *REDUNDANT_LOOKUP,
     *PII_LEAK,
     *PII_IN_USER_INPUT,
 ]
