@@ -41,6 +41,7 @@ evals/
   dataset_hallucinations.json   Committed snapshot of banking-concierge-hallucinations
   dataset_pii.json              Committed snapshot of banking-concierge-pii
 langgraph.json                  Deployment manifest (graphs + http.app) for LangSmith Cloud
+rubric.md                       Annotation-queue rubric for human review of PII-flagged traces
 ```
 
 ## Setup
