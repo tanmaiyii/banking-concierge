@@ -9,7 +9,9 @@ and open Studio at http://localhost:2024.
 
 from __future__ import annotations
 
+import os
 import sys
+import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
@@ -27,7 +29,20 @@ def main() -> None:
         if len(sys.argv) > 1
         else "What is the monthly fee on Everyday Checking?"
     )
-    result = graph.invoke({"messages": [{"role": "user", "content": question}]})
+    # Populate root-run metadata so the Threads view can group multi-turn
+    # sessions, per-rep filtering works, and prod/staging traces stay separate.
+    config = {
+        "metadata": {
+            "thread_id": os.environ.get("CONCIERGE_THREAD_ID", str(uuid.uuid4())),
+            "user_id": os.environ.get("CONCIERGE_USER_ID", "smoke-test"),
+            "environment": os.environ.get("APP_ENV", "development"),
+        },
+        "run_name": "agent",
+    }
+    result = graph.invoke(
+        {"messages": [{"role": "user", "content": question}]},
+        config=config,
+    )
     print(result["messages"][-1].content)
 
 

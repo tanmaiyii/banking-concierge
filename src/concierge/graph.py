@@ -29,7 +29,7 @@ load_dotenv(override=True)
 SYSTEM_PROMPT = get_prompt()
 
 
-def _make_model() -> ChatOpenAI:
+def _make_model():
     model_name = os.getenv("CONCIERGE_MODEL", "gpt-4o-mini")
     base_url = os.getenv("BASE_URL")
     if base_url:
@@ -43,7 +43,12 @@ def _make_model() -> ChatOpenAI:
         )
     else:
         client = ChatOpenAI(model=model_name, temperature=0.2)
-    return client.bind_tools(TOOLS)
+    # Stamp ls_provider/ls_model_name on every LLM child span so LangSmith
+    # cost aggregation and the Messages view adapter can key on them even
+    # when routed through the LLM Gateway (which drops the default provider tag).
+    return client.bind_tools(TOOLS).with_config(
+        metadata={"ls_provider": "openai", "ls_model_name": model_name}
+    )
 
 
 def agent_node(state: ConciergeState) -> dict:
@@ -76,7 +81,14 @@ def _build_graph():
         {"tools": "tools", END: END},
     )
     builder.add_edge("tools", "agent")
-    return builder.compile()
+    compiled = builder.compile()
+    # Stamp environment on every root run so production and staging traces
+    # don't mix in dashboards. thread_id / user_id must be supplied per-invoke
+    # by the caller (see main.py and the frontend sendMessage config).
+    return compiled.with_config(
+        run_name="agent",
+        metadata={"environment": os.environ.get("APP_ENV", "development")},
+    )
 
 
 graph = _build_graph()
