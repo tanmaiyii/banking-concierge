@@ -20,7 +20,7 @@ def _make_embeddings() -> OpenAIEmbeddings:
     return OpenAIEmbeddings(
         model="text-embedding-3-small",
         base_url=base_url,
-        api_key=os.environ["LANGSMITH_API_KEY"],
+        api_key=os.getenv("LLM_GATEWAY_API_KEY") or os.environ["LANGSMITH_API_KEY"],
     )
 
 

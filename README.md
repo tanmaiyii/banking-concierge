@@ -105,7 +105,7 @@ uv run langgraph dev
 `langgraph dev` serves two separate UIs. Paste the full URL into your browser:
 
 - **`http://localhost:2024/concierge/`** — the project's custom React chat UI (the main demo UI), served by `src/concierge/app.py` from `frontend/dist/`. This is what `npm run build` produces; until you build it, the page returns a 503 with a "run npm build" hint.
-- **`http://localhost:2024/app/`** — LangGraph Studio, the built-in debugger. Works with no frontend build.
+- **`https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024`** — LangGraph Studio, the built-in debugger. Works with no frontend build. (As of `langgraph-cli` ≥0.4.x, Studio is hosted on `smith.langchain.com` and connects back to your local server — `http://localhost:2024/app/` no longer exists.)
 
 `http://localhost:2024/` (the bare root) just redirects to `/concierge/`.
 
