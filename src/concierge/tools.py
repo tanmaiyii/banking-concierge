@@ -60,7 +60,11 @@ def account_lookup(customer_id: str) -> dict:
             f"No customer found with ID {customer_id!r}. "
             "Customer IDs are in the format CUST-####."
         )
-    return dict(customer)
+    return {
+        "customer_id": customer["customer_id"],
+        "name": customer["name"],
+        "accounts": [dict(account) for account in customer["accounts"]],
+    }
 
 
 @tool
