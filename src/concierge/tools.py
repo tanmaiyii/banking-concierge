@@ -24,6 +24,54 @@ from concierge.mock_data import (
 from concierge.retrieval import retrieve
 
 
+def _mask_ssn(ssn: str) -> str:
+    """Return an SSN as XXX-XX-#### using only the last 4 digits."""
+    digits = "".join(ch for ch in ssn if ch.isdigit())
+    last4 = digits[-4:] if len(digits) >= 4 else digits
+    return f"XXX-XX-{last4}"
+
+
+def _mask_card_number(number: str) -> str:
+    """Return a card PAN as **** **** **** #### using only the last 4 digits."""
+    digits = "".join(ch for ch in number if ch.isdigit())
+    last4 = digits[-4:] if len(digits) >= 4 else digits
+    return f"**** **** **** {last4}"
+
+
+def _mask_account_id(account_id: str) -> str:
+    """Return an account identifier as ****#### using only the last 4 digits."""
+    last4 = account_id[-4:] if len(account_id) >= 4 else account_id
+    return f"****{last4}"
+
+
+def _redact_customer(customer: dict) -> dict:
+    """Return a copy of a customer record with SSN, card PAN, CVV, and account IDs masked."""
+    redacted: dict = {
+        "customer_id": customer.get("customer_id"),
+        "name": customer.get("name"),
+        "phone": customer.get("phone"),
+        "email": customer.get("email"),
+        "ssn": _mask_ssn(customer.get("ssn", "")),
+        "credit_cards": [
+            {
+                "brand": card.get("brand"),
+                "number": _mask_card_number(card.get("number", "")),
+                "exp": card.get("exp"),
+            }
+            for card in customer.get("credit_cards", [])
+        ],
+        "accounts": [
+            {
+                "account_id": _mask_account_id(acct.get("account_id", "")),
+                "type": acct.get("type"),
+                "balance": acct.get("balance"),
+            }
+            for acct in customer.get("accounts", [])
+        ],
+    }
+    return redacted
+
+
 @tool
 def search_banking_docs(query: str, k: int = 4) -> str:
     """Search Meridian National banking documentation.
@@ -60,7 +108,7 @@ def account_lookup(customer_id: str) -> dict:
             f"No customer found with ID {customer_id!r}. "
             "Customer IDs are in the format CUST-####."
         )
-    return dict(customer)
+    return _redact_customer(dict(customer))
 
 
 @tool
