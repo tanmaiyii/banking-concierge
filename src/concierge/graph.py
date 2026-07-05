@@ -29,17 +29,37 @@ load_dotenv(override=True)
 SYSTEM_PROMPT = get_prompt()
 
 
-def _make_model() -> ChatOpenAI:
+class ConfigError(RuntimeError):
+    """Raised at startup when required model credentials are missing."""
+
+
+def _resolve_model_credentials() -> tuple[str, str | None, str | None]:
+    """Return (model_name, base_url, api_key) or raise ConfigError if unset."""
     model_name = os.getenv("CONCIERGE_MODEL", "gpt-4o-mini")
     base_url = os.getenv("BASE_URL")
     if base_url:
         # Route through the LangSmith LLM Gateway: callers authenticate with
         # their LangSmith API key; provider keys live in Provider Secrets.
+        api_key = os.getenv("LLM_GATEWAY_API_KEY") or os.getenv("LANGSMITH_API_KEY")
+        if not api_key:
+            raise ConfigError(
+                "LLM Gateway configured via BASE_URL but neither "
+                "LLM_GATEWAY_API_KEY nor LANGSMITH_API_KEY is set."
+            )
+        return model_name, base_url, api_key
+    if not os.getenv("OPENAI_API_KEY"):
+        raise ConfigError("OPENAI_API_KEY is not set.")
+    return model_name, None, None
+
+
+def _make_model() -> ChatOpenAI:
+    model_name, base_url, api_key = _resolve_model_credentials()
+    if base_url:
         client = ChatOpenAI(
             model=model_name,
             temperature=0.2,
             base_url=base_url,
-            api_key=os.getenv("LLM_GATEWAY_API_KEY") or os.environ["LANGSMITH_API_KEY"],
+            api_key=api_key,
         )
     else:
         client = ChatOpenAI(model=model_name, temperature=0.2)
@@ -65,6 +85,9 @@ def agent_node(state: ConciergeState) -> dict:
 
 
 def _build_graph():
+    # Fail fast at deploy time if model credentials are missing, so the crash
+    # surfaces at startup rather than on the first user request.
+    _resolve_model_credentials()
     builder = StateGraph(ConciergeState)
     builder.add_node("agent", agent_node)
     builder.add_node("tools", ToolNode(TOOLS, handle_tool_errors=True))
