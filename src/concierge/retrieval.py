@@ -15,12 +15,15 @@ KB_DIR = Path(__file__).parent / "kb"
 
 
 def _make_embeddings() -> OpenAIEmbeddings:
-    """Create an OpenAIEmbeddings instance."""
-    base_url = os.getenv("BASE_URL")
+    # Embeddings must go directly to OpenAI. The LangSmith gateway only
+    # allow-lists chat completions, not /embeddings, so when BASE_URL /
+    # OPENAI_BASE_URL point at the gateway (as they do for the chat model in
+    # graph.py) a default embeddings client inherits OPENAI_BASE_URL and gets a
+    # 403/501 from the gateway. Pin the embeddings endpoint to OpenAI directly.
     return OpenAIEmbeddings(
         model="text-embedding-3-small",
-        base_url=base_url,
-        api_key=os.getenv("LLM_GATEWAY_API_KEY") or os.environ["LANGSMITH_API_KEY"],
+        base_url="https://api.openai.com/v1",
+        api_key=os.environ["OPENAI_API_KEY"],
     )
 
 
